@@ -73,10 +73,12 @@ namespace Assets.Scripts{
             craft_e = CraftOrbitData.Eccentricity;
 
             // setup init value, vector for path calculation
-            craft_init_r0 = craft_r;
+            /*craft_init_r0 = craft_r;
             craft_init_theta = craft_theta;
             craft_init_x0 = Vector3d.Magnitude(craft_init_r0) * Math.Cos(craft_init_theta);
-            craft_init_y0 = Vector3d.Magnitude(craft_init_r0) * Math.Sin(craft_init_theta);
+            craft_init_y0 = Vector3d.Magnitude(craft_init_r0) * Math.Sin(craft_init_theta);*/
+            InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, craft_init_r0, craft_init_v0, craft_init_theta,
+            craft_init_x0, craft_init_y0, craft_init_dot_x0, craft_init_dot_y0, craft_p, craft_q);
         }
         public void InitializeTargetData(){
             // r, v, h, e, p, q
@@ -104,19 +106,25 @@ namespace Assets.Scripts{
             // setup init value, vector for path calculation
 
         }
-        public void InitializeInitData(Vector3d r, double theta, double h_value, double e, double mu, out Vector3d init_r0, out double init_theta, out Vector3d init_x0, out Vector3d init_y0,
-                                       out Vecto3d init_dot_x0, out Vector3d init_dot_y0, out Vector3d p, out Vector3d q){
+        public void InitializeInitData(Vector3d r, Vector3d v, double theta, double h_value, double e, double mu, 
+                                       out Vector3d init_r0, out Vector3d init_v0,out double init_theta,
+                                       out Vector3d init_x0, out Vector3d init_y0,
+                                       out Vector3d init_dot_x0, out Vector3d init_dot_y0, out Vector3d p, out Vector3d q){
             init_r0 = r;
+            init_v0 = v;
             init_theta = theta;
             init_x0 = Vector3d.Magnitude(init_r0) * Math.Cos(init_theta);
             init_y0 = Vector3d.Magnitude(init_r0) * Math.Sin(init_theta);
             init_dot_x0 = -((mu/h_value)*(Math.Sin(theta)));
             init_dot_y0 = (mu/h_value)*(e + Math.Cos(theta));
-            p = ()
-
+            p = ((init_dot_y0/h_value)*init_r0) - (init_y0/h_value)*init_v0;
+            q = (init_r0/init_y0) - (init_x0/init_y0)*p;
         }
         public void InitializePlanetData(){
             var PlanetNode = Game.Instance.FlightScene.CraftNode.CraftScript.FlightData.Orbit.Parent;
+            var PlanetData = PlanetNode.PlanetData;
+            planet_mass = PlanetData.Mass;
+            planet_mu = Constants.GravitationConstant * planet_mass;
         }
         public void calculateCraftPath(){
 
@@ -134,7 +142,7 @@ namespace Assets.Scripts{
         public double get_t(double e, double theta, double T){
             return (get_Me(e, theta)/2*Math.PI)*T;
         }
-        public updateCoordinateVectors(){
+        public void updateCoordinateVectors(){
             // update North, East, unit Position.
             // NavNorth, NavEast, NavR
             var CraftNode = Game.Instance.FlightScene.CraftNode;
@@ -145,24 +153,24 @@ namespace Assets.Scripts{
             NavEast = CraftFlightData.East;
             NavR = Math.Normalize(CraftFlightData.Position);
         }
-        public XYZ_to_NER(Vector3d XYZ){
+        public Vector3d XYZ_to_NER(Vector3d XYZ){
             updateCoordinateVectors();
             return new Vector3d(Vector3d.Dot(XYZ, NavNorth), Vector3d.Dot(XYZ, NavEast), Vector3d.Dot(XYZ, NavR));
         }
-        public NER_to_XYZ(Vector3d NER){
+        public Vector3d NER_to_XYZ(Vector3d NER){
             updateCoordinateVectors();
             return (NavNorth*NER.x + NavEast*NER.y + NavR*NER.z);
         }
-        public rad2deg(double rad){
+        public double rad2deg(double rad){
             return rad*180/Math.PI;
         }
-        public deg2rad(double deg){
+        public double deg2rad(double deg){
             return deg/180*Math.PI;
         }
-        public NER_to_pitch(Vector3d NER){
+        public double NER_to_pitch(Vector3d NER){
             rad2deg(NER.z, Vector3d.Magnitude( new Vector3d(NER.x, NER.y, 0)));
         }
-        public NER_to_Heading(Vector3d NER){
+        public double NER_to_Heading(Vector3d NER){
             rad2deg(Math.Atan2(NER.y, NER.x));
         }
     }
