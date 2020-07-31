@@ -16,8 +16,15 @@ namespace Assets.Scripts{
         Vector3d craft_h, target_h;
         double craft_h_value, target_h_value;
         double craft_e, target_e, craft_T, target_T, planet_mu, planet_mass;
-        Vector3d craft_theta, target_theta, craft_p, craft_q, target_p, target_q;
+        Vector3d craft_theta, target_theta;
         Vector3d craft_E, target_E, craft_Me, target_Me;
+        // advance calculation require value, vector
+        double craft_init_theta, target_init_theta;
+        Vector3d craft_p, craft_q, target_p, target_q;
+        Vector3d craft_init_r0, craft_init_v0, target_init_r0, target_init_v0;
+        Vector3d craft_init_x0, craft_init_y0, target_init_x0, target_init_y0;
+        Vector3d craft_init_dot_x0, craft_init_dot_y0, target_init_dot_x0, target_init_dot_y0;
+
 
         // avoid different PCI transfer.
         string craft_parent_name, target_parent_name; 
@@ -64,6 +71,9 @@ namespace Assets.Scripts{
             craft_h_value = CraftOrbit.AngularMomentumMag;
             craft_T = CraftOrbitData.Period;
             craft_e = CraftOrbitData.Eccentricity;
+
+            // setup init value, vector for path calculation
+
         }
         public void InitializeTargetData(){
             // r, v, h, e, p, q
@@ -87,11 +97,15 @@ namespace Assets.Scripts{
             target_e = TargetOrbit.Eccentricity;
 
             Debug.Log(target_r);
-            
+
+            // setup init value, vector for path calculation
 
         }
         public void InitializePlanetData(){
             var PlanetNode = Game.Instance.FlightScene.CraftNode.CraftScript.FlightData.Orbit.Parent;
+        }
+        public void calculateCraftPath(){
+
         }
 
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
