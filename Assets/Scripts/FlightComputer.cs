@@ -16,14 +16,14 @@ namespace Assets.Scripts{
         Vector3d craft_h, target_h;
         double craft_h_value, target_h_value;
         double craft_e, target_e, craft_T, target_T, planet_mu, planet_mass;
-        Vector3d craft_theta, target_theta;
-        Vector3d craft_E, target_E, craft_Me, target_Me;
+        double craft_theta, target_theta;
+        double craft_E, target_E, craft_Me, target_Me;
         // advance calculation require value, vector
         double craft_init_theta, target_init_theta;
         Vector3d craft_p, craft_q, target_p, target_q;
         Vector3d craft_init_r0, craft_init_v0, target_init_r0, target_init_v0;
-        Vector3d craft_init_x0, craft_init_y0, target_init_x0, target_init_y0;
-        Vector3d craft_init_dot_x0, craft_init_dot_y0, target_init_dot_x0, target_init_dot_y0;
+        double craft_init_x0, craft_init_y0, target_init_x0, target_init_y0;
+        double craft_init_dot_x0, craft_init_dot_y0, target_init_dot_x0, target_init_dot_y0;
 
 
         // avoid different PCI transfer.
@@ -65,6 +65,7 @@ namespace Assets.Scripts{
             craft_v = CraftFlightData.Velocity;
             craft_v_value = CraftFlightData.VelocityMagnitude;
             craft_v_r = CraftFlightData.VerticalSurfaceVelocity;
+            craft_theta = CraftOrbit.TrueAnomaly;
         
             //craft_h = Vector3d.Cross(craft_r, craft_v);// Vector3d
             craft_h = CraftOrbit.AngularMomentum;
@@ -73,12 +74,10 @@ namespace Assets.Scripts{
             craft_e = CraftOrbitData.Eccentricity;
 
             // setup init value, vector for path calculation
-            /*craft_init_r0 = craft_r;
-            craft_init_theta = craft_theta;
-            craft_init_x0 = Vector3d.Magnitude(craft_init_r0) * Math.Cos(craft_init_theta);
-            craft_init_y0 = Vector3d.Magnitude(craft_init_r0) * Math.Sin(craft_init_theta);*/
-            InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, craft_init_r0, craft_init_v0, craft_init_theta,
-                               craft_init_x0, craft_init_y0, craft_init_dot_x0, craft_init_dot_y0, craft_p, craft_q);
+            InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, out craft_init_r0, out craft_init_v0, 
+                               out craft_init_theta, out craft_init_x0, out craft_init_y0, out craft_init_dot_x0, out craft_init_dot_y0, 
+                               out craft_p, out craft_q);
+
         }
         public void InitializeTargetData(){
             // r, v, h, e, p, q
@@ -95,23 +94,25 @@ namespace Assets.Scripts{
             target_v = NavSphereTarget.Velocity;
             target_v_value = Vector3d.Magnitude(target_v);
             target_v_r = Vector3d.Dot(target_v, target_unit_r);
+            target_theta = TargetOrbit.TrueAnomaly;
 
             target_h = TargetOrbit.AngularMomentum;
             target_h_value = TargetOrbit.AngularMomentumMag;
             target_T = TargetOrbit.Period;
             target_e = TargetOrbit.Eccentricity;
 
-            Debug.Log(target_r);
+            // Debug.Log(target_r);
 
             // setup init value, vector for path calculation
-            InitializezInitData(target_r, target_v, target_theta, target_h_value, target_e, planet_mu, target_init_r0, target_init_v0, target_init_theta,
-                                target_init_x0, target_init_y0, target_init_dot_x0, target_init_dot_y0, target_p, target_q);
+            InitializeInitData(target_r, target_v, target_theta, target_h_value, target_e, planet_mu, out target_init_r0, out target_init_v0,
+                               out target_init_theta, out target_init_x0, out target_init_y0, out target_init_dot_x0, out  target_init_dot_y0,
+                               out target_p, out target_q);
 
         }
         public void InitializeInitData(Vector3d r, Vector3d v, double theta, double h_value, double e, double mu, 
                                        out Vector3d init_r0, out Vector3d init_v0,out double init_theta,
-                                       out Vector3d init_x0, out Vector3d init_y0,
-                                       out Vector3d init_dot_x0, out Vector3d init_dot_y0, out Vector3d p, out Vector3d q){
+                                       out double init_x0, out double init_y0,
+                                       out double init_dot_x0, out double init_dot_y0, out Vector3d p, out Vector3d q){
             init_r0 = r;
             init_v0 = v;
             init_theta = theta;
@@ -136,7 +137,7 @@ namespace Assets.Scripts{
             return (t2 + ( Math.Ceiling( (t1 - t2) / T) ) * T ) - t1;
         }
         public double get_E(double e, double theta){
-            return (Math.Atan2((Math.Sqrt(1 - e^2 ) * Math.Sin(theta))/(e + Math.Cos(theta))));
+            return (Math.Atan2((Math.Sqrt(1 - Math.Pow(e, 2) ) * Math.Sin(theta))/(e + Math.Cos(theta))));
         }
         public double get_Me(double e, double theta){
             return (get_E(e, theta) - e*(Math.Sin(get_E(e, theta))));
@@ -153,7 +154,7 @@ namespace Assets.Scripts{
 
             NavNorth = CraftFlightData.North;
             NavEast = CraftFlightData.East;
-            NavR = Math.Normalize(CraftFlightData.Position);
+            NavR = Vector3d.Normalize(CraftFlightData.Position);
         }
         public Vector3d XYZ_to_NER(Vector3d XYZ){
             updateCoordinateVectors();
@@ -170,10 +171,10 @@ namespace Assets.Scripts{
             return deg/180*Math.PI;
         }
         public double NER_to_pitch(Vector3d NER){
-            rad2deg(NER.z, Vector3d.Magnitude( new Vector3d(NER.x, NER.y, 0)));
+            return rad2deg(Math.Atan2(NER.z, Vector3d.Magnitude( new Vector3d(NER.x, NER.y, 0))));
         }
         public double NER_to_Heading(Vector3d NER){
-            rad2deg(Math.Atan2(NER.y, NER.x));
+            return rad2deg(Math.Atan2(NER.y, NER.x));
         }
     }
 }
