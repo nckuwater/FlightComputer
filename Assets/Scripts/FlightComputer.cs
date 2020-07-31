@@ -118,10 +118,24 @@ namespace Assets.Scripts{
             NavR = Math.Normalize(CraftFlightData.Position);
         }
         public XYZ_to_NER(Vector3d XYZ){
+            updateCoordinateVectors();
             return new Vector3d(Vector3d.Dot(XYZ, NavNorth), Vector3d.Dot(XYZ, NavEast), Vector3d.Dot(XYZ, NavR));
         }
         public NER_to_XYZ(Vector3d NER){
+            updateCoordinateVectors();
             return (NavNorth*NER.x + NavEast*NER.y + NavR*NER.z);
+        }
+        public rad2deg(double rad){
+            return rad*180/Math.PI;
+        }
+        public deg2rad(double deg){
+            return deg/180*Math.PI;
+        }
+        public NER_to_pitch(Vector3d NER){
+            rad2deg(NER.z, Vector3d.Magnitude( new Vector3d(NER.x, NER.y, 0)));
+        }
+        public NER_to_Heading(Vector3d NER){
+            rad2deg(Math.Atan2(NER.y, NER.x));
         }
     }
 }
