@@ -73,7 +73,10 @@ namespace Assets.Scripts{
             craft_e = CraftOrbitData.Eccentricity;
 
             // setup init value, vector for path calculation
-
+            craft_init_r0 = craft_r;
+            craft_init_theta = craft_theta;
+            craft_init_x0 = Vector3d.Magnitude(craft_init_r0) * Math.Cos(craft_init_theta);
+            craft_init_y0 = Vector3d.Magnitude(craft_init_r0) * Math.Sin(craft_init_theta);
         }
         public void InitializeTargetData(){
             // r, v, h, e, p, q
@@ -99,6 +102,17 @@ namespace Assets.Scripts{
             Debug.Log(target_r);
 
             // setup init value, vector for path calculation
+
+        }
+        public void InitializeInitData(Vector3d r, double theta, double h_value, double e, double mu, out Vector3d init_r0, out double init_theta, out Vector3d init_x0, out Vector3d init_y0,
+                                       out Vecto3d init_dot_x0, out Vector3d init_dot_y0, out Vector3d p, out Vector3d q){
+            init_r0 = r;
+            init_theta = theta;
+            init_x0 = Vector3d.Magnitude(init_r0) * Math.Cos(init_theta);
+            init_y0 = Vector3d.Magnitude(init_r0) * Math.Sin(init_theta);
+            init_dot_x0 = -((mu/h_value)*(Math.Sin(theta)));
+            init_dot_y0 = (mu/h_value)*(e + Math.Cos(theta));
+            p = ()
 
         }
         public void InitializePlanetData(){
