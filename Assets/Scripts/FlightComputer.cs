@@ -78,7 +78,7 @@ namespace Assets.Scripts{
             craft_init_x0 = Vector3d.Magnitude(craft_init_r0) * Math.Cos(craft_init_theta);
             craft_init_y0 = Vector3d.Magnitude(craft_init_r0) * Math.Sin(craft_init_theta);*/
             InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, craft_init_r0, craft_init_v0, craft_init_theta,
-            craft_init_x0, craft_init_y0, craft_init_dot_x0, craft_init_dot_y0, craft_p, craft_q);
+                               craft_init_x0, craft_init_y0, craft_init_dot_x0, craft_init_dot_y0, craft_p, craft_q);
         }
         public void InitializeTargetData(){
             // r, v, h, e, p, q
@@ -104,6 +104,8 @@ namespace Assets.Scripts{
             Debug.Log(target_r);
 
             // setup init value, vector for path calculation
+            InitializezInitData(target_r, target_v, target_theta, target_h_value, target_e, planet_mu, target_init_r0, target_init_v0, target_init_theta,
+                                target_init_x0, target_init_y0, target_init_dot_x0, target_init_dot_y0, target_p, target_q);
 
         }
         public void InitializeInitData(Vector3d r, Vector3d v, double theta, double h_value, double e, double mu, 
