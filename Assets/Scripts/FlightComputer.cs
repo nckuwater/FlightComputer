@@ -20,7 +20,7 @@ namespace Assets.Scripts{
         double craft_theta, target_theta;
         double craft_E, target_E, craft_Me, target_Me;
         // advance calculation require value, vector
-        double craft_init_theta, target_init_theta;
+        double craft_init_theta0, target_init_theta0;
         Vector3d craft_p, craft_q, target_p, target_q;
         Vector3d craft_init_r0, craft_init_v0, target_init_r0, target_init_v0;
         double craft_init_x0, craft_init_y0, target_init_x0, target_init_y0;
@@ -76,11 +76,10 @@ namespace Assets.Scripts{
 
             // setup init value, vector for path calculation
             InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, out craft_init_r0, out craft_init_v0, 
-                               out craft_init_theta, out craft_init_x0, out craft_init_y0, out craft_init_dot_x0, out craft_init_dot_y0, 
+                               out craft_init_theta0, out craft_init_x0, out craft_init_y0, out craft_init_dot_x0, out craft_init_dot_y0, 
                                out craft_p, out craft_q);
             Debug.Log($"craft_p {craft_p}");
             Debug.Log($"craft_q {craft_q}");
-
         }
         public void InitializeTargetData(){
             // Init planet data
@@ -114,7 +113,7 @@ namespace Assets.Scripts{
 
             // setup init value, vector for path calculation
             InitializeInitData(target_r, target_v, target_theta, target_h_value, target_e, planet_mu, out target_init_r0, out target_init_v0,
-                               out target_init_theta, out target_init_x0, out target_init_y0, out target_init_dot_x0, out  target_init_dot_y0,
+                               out target_init_theta0, out target_init_x0, out target_init_y0, out target_init_dot_x0, out  target_init_dot_y0,
                                out target_p, out target_q);
             Debug.Log("target_p");
             Debug.Log(target_p);
@@ -142,15 +141,32 @@ namespace Assets.Scripts{
             planet_mass = PlanetData.Mass;
             planet_mu = Constants.GravitationConstant * planet_mass;
         }
-        public void calculate_data_in_theta(double theta, double e, double T, Vector3d p, Vector3d q, out Vector3d r, out Vector3d v){
+        public void calculate_data_in_theta(double theta, double init_theta0, Vector3d init_r0, Vector3d init_v0, 
+                                            double h_value, double e, double T,
+                                            out Vector3d r, out Vector3d v){
             // be sure do init this
             // theta is the variable to be set.
-            double E = calculate_E_in_t(craft_t, craft_T, craft_e);
+            
+            //double E = calculate_E_in_t(craft_t, craft_T, craft_e);
+            // get specific value first (reduce code complexity)
+            double init_r0_value = Vector3d.Magnitude(init_r0);
+            double delta_theta = theta - init_theta0;
+
+            double calc_r_value = get_r(h_value, mu, e, theta);
+            double lagr_f = 1 - ( (mu * calc_r )/Math.Pow(h_value, 2) * (1 - Math.Cos(delta_theta)));
+            double lagr_g = ((calc_r * init_r0_value) * Math.Sin(delta_theta)) / h_value;
+
+            double calc_r = lagr_f * init_r0 + lagr_g * init_v0;
+
+            double lagr_dot_g = 1 - ( ( (mu * init_r0_value) / Math.Pow(h_value, 2) ) * (1 - Math.Cos(delta_theta)) );
             
         }
 
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
             return (t2 + ( Math.Ceiling( (t1 - t2) / T) ) * T ) - t1;
+        }
+        public double get_r(double h_value, double mu, double e, double theta){
+            return (Math.Pow(h_value, 2)/mu) / (1 + e * Math.Cos(theta));
         }
         public double get_T(double mu, double h_value, double e){
             (PI2/Math.Pow(mu, 2))*Math.Pow((h_value/Math.Sqrt(1-Math.Pow(e, 2))), 3);
@@ -183,7 +199,7 @@ namespace Assets.Scripts{
             return E;
         }
         public double calculate_theta_in_t(double t, double T, double e, double init_theta = 0){
-            // init_theta is the variable, not craft_init_theta
+            // init_theta is the variable, not craft_init_theta0
             double init_E = get_E(e, init_theta);
             double E = calculate_E_in_t(t, T, e, init_E);
 
