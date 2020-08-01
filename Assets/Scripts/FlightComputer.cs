@@ -9,6 +9,7 @@ using ModApi.Ui.Inspector;
 using ModApi.Mods;
 using UnityEngine;
 
+
 namespace Assets.Scripts{
     public class FlightComputer{
         Vector3d craft_r, target_r, craft_v, target_v, craft_unit_r, target_unit_r;
@@ -31,6 +32,9 @@ namespace Assets.Scripts{
 
         // real time coordinate vector
         Vector3d NavNorth, NavEast, NavR;
+
+        // constant
+        const double PI2 = 2*Math.PI;
 
         public FlightComputer(){
             
@@ -148,6 +152,9 @@ namespace Assets.Scripts{
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
             return (t2 + ( Math.Ceiling( (t1 - t2) / T) ) * T ) - t1;
         }
+        public double get_T(double mu, double h_value, double e){
+            (PI2/Math.Pow(mu, 2))*Math.Pow((h_value/Math.Sqrt(1-Math.Pow(e, 2))), 3);
+        }
         public double get_E(double e, double theta){
             return (Math.Atan2((Math.Sqrt(1 - Math.Pow(e, 2) ) * Math.Sin(theta)), (e + Math.Cos(theta))));
         }
@@ -178,7 +185,8 @@ namespace Assets.Scripts{
         public double calculate_theta_in_t(double t, double T, double e, double init_theta = 0){
             // init_theta is the variable, not craft_init_theta
             double init_E = get_E(e, init_theta);
-            return calculate_E_in_t(t, T, e, init_E);
+            double E = calculate_E_in_t(t, T, e, init_E);
+
         }
         public void updateCoordinateVectors(){
             // update North, East, unit Position.
