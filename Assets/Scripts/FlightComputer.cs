@@ -152,7 +152,7 @@ namespace Assets.Scripts{
             InitializeTargetData();
             double transfer_ra, transfer_rp = Vetor3d.Magnitude(craft_r);
             Vector3d intercept_r_direction = craft_r * -1, intercept_r, intercept_v;
-            // the intercept point's theta in target orbit.
+            // the intercept point's theta in target orbit. this section only for period finding.
             double intercept_theta_in_target = get_theta_of_r(intercept_r_direction, target_p, target_q); 
             double intercept_r_value = get_r(target_h_value, planet_mu, target_e, intercept_theta_in_target);
             double craft_r_value = Vector3d.Magnitude(craft_r);
@@ -171,8 +171,27 @@ namespace Assets.Scripts{
             // Find periods to wait
             // init value for iteration
             double iter_target_theta = target_theta;
-            double target_theta_after_T = calculate_theta_in_t(craft_T, target_T, target_e, planet_mu, target_theta);
-
+            double iter_target_theta_after_craft_T = calculate_theta_in_t(craft_T, target_T, target_e, planet_mu, iter_target_theta);
+            int total_periods_to_wait = 0;
+            while (!(IsAngleBetween(iter_target_theta, intercept_theta_in_target, iter_target_theta_after_craft_T))){
+                iter_target_theta = iter_target_theta_after_craft_T;
+                iter_target_theta_after_craft_T = calculate_theta_in_t(craft_T, target_T, target_e, planet_mu, iter_target_theta);
+                ++wait_periods;
+            }
+            double total_wait_time = craft_T * total_periods_to_wait;
+            // Finding precise angle
+            // iter_target_theta can continue.
+            double UNIT_RADIAN = Math.PI/180;
+            double iter_craft_theta = craft_theta;
+            double iter_craft_theta_after_time_elapsed = iter_craft_theta + UNIT_RADIAN;
+            double iter_time_elapsed = GetElapsedTimeBetweenTime(get_t(craft_e, iter_craft_theta, craft_T), 
+                                                                       get_t(craft_e, iter_craft_theta_after_time_elapsed, craft_T), craft_T);
+            double total_iter_time_elapsed = iter_time_elapsed;
+            double iter_target_theta_after_time_elapsed = calculate_theta_in_t(get_t(target_e, iter_target_theta, target_T),
+                                                                               target_T, target_e, planet_mu, iter_target_theta);
+            while (!(IsAngleBetween())){
+                
+            }
         }
 
 
