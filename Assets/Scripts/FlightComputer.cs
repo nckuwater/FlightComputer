@@ -43,7 +43,7 @@ namespace Assets.Scripts{
             InitializeCraftData();
         }
 
-        public void InitializeCraftData(){
+        public void InitializeCraftData(bool reset_init = true){
             // Init planet data
             InitializePlanetData();
             // will update craft, planet.
@@ -75,13 +75,15 @@ namespace Assets.Scripts{
             craft_e = CraftOrbitData.Eccentricity;
 
             // setup init value, vector for path calculation
-            InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, out craft_init_r0, out craft_init_v0, 
-                               out craft_init_theta0, out craft_init_x0, out craft_init_y0, out craft_init_dot_x0, out craft_init_dot_y0, 
-                               out craft_p, out craft_q);
-            Debug.Log($"craft_p {craft_p}");
-            Debug.Log($"craft_q {craft_q}");
+            if (reset_init){
+                InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, out craft_init_r0, out craft_init_v0, 
+                                   out craft_init_theta0, out craft_init_x0, out craft_init_y0, out craft_init_dot_x0, out craft_init_dot_y0, 
+                                   out craft_p, out craft_q);
+                Debug.Log($"craft_p {craft_p}");
+                Debug.Log($"craft_q {craft_q}");
+            }
         }
-        public void InitializeTargetData(){
+        public void InitializeTargetData(bool reset_init = true){
             // Init planet data
             InitializePlanetData();
             // r, v, h, e, p, q
@@ -112,13 +114,15 @@ namespace Assets.Scripts{
             // Debug.Log(target_r);
 
             // setup init value, vector for path calculation
-            InitializeInitData(target_r, target_v, target_theta, target_h_value, target_e, planet_mu, out target_init_r0, out target_init_v0,
-                               out target_init_theta0, out target_init_x0, out target_init_y0, out target_init_dot_x0, out  target_init_dot_y0,
-                               out target_p, out target_q);
-            Debug.Log("target_p");
-            Debug.Log(target_p);
-            Debug.Log("target_q");
-            Debug.Log(target_q);
+            if (reset_init){
+                InitializeInitData(target_r, target_v, target_theta, target_h_value, target_e, planet_mu, out target_init_r0, out target_init_v0,
+                                out target_init_theta0, out target_init_x0, out target_init_y0, out target_init_dot_x0, out  target_init_dot_y0,
+                                out target_p, out target_q);
+                Debug.Log("target_p");
+                Debug.Log(target_p);
+                Debug.Log("target_q");
+                Debug.Log(target_q);
+            }
 
         }
         public void InitializeInitData(Vector3d r, Vector3d v, double theta, double h_value, double e, double mu, 
@@ -141,8 +145,23 @@ namespace Assets.Scripts{
             planet_mass = PlanetData.Mass;
             planet_mu = Constants.GravitationConstant * planet_mass;
         }
+        // Path Calculations
+        public void calculate_next_e2e_intercept_launch_time(){
+            // assume the intercept point is in the opposite angle of craft and on the transfer/target orbit.
+            InitializeCraftData();
+            InitializeTargetData();
+            double transfer_ra, transfer_rp = Vetor3d.Magnitude(craft_r);
+            Vector3d intercept_r_direction = craft_r * -1, intercept_r, intercept_v;
+            double intercept_theta_in_target = get_theta_of_r(intercept_r_direction, target_p, target_q); // the intercept point's theta in target orbit.
+            intercept_r = Vector3d.ClampMagnitude(intercept_r_direction, get_r(target_h_value, planet_mu, target_e, intercept_theta_in_target));
+
+            bool IsDecrease;
+        }
+
+
+        // Component Calculations
         public void calculate_data_in_theta(double theta, double init_theta0, Vector3d init_r0, Vector3d init_v0, 
-                                            double h_value, double e, double T,
+                                            double h_value, double mu, double e, double T,
                                             out Vector3d calc_r, out Vector3d calc_v){
             // be sure do init this
             // theta is the variable to be set.
@@ -164,6 +183,9 @@ namespace Assets.Scripts{
             
             // Vector3d calc_v = lagr_dot_f * init_r0 + lagr_dot_g * init_v0;
             calc_v = lagr_dot_f * init_r0 + lagr_dot_g * init_v0;
+        }
+        public get_theta_of_r(Vector3d r, Vector3d p, Vector3d q){
+            return Math.Atan2( Vector3d.Dot(r, q), Vector3d.Dot(r, p) );
         }
 
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
