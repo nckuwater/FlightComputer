@@ -221,6 +221,12 @@ namespace Assets.Scripts{
         public double get_t(double e, double theta, double T){
             return (get_Me(e, theta)/2*Math.PI)*T;
         }
+        public double get_theta(double r_value, double v_r, double h_value, double mu){
+            return Math.Atan2( v_r*h_value*r_value, (Math.Pow(h_value, 2)-r*mu) );
+        }
+        public double get_theta(Vector3d r, Vector3d v, double h_value, double mu){
+            return get_theta(Vector3d.Magnitude(r), Vector3d.Dot(r, v), h_value, mu);
+        }
         public double formula_E_zero(double E, double e, double Me){
             return E - e * Math.Sin(E) - Me;
         }
