@@ -42,7 +42,7 @@ namespace Assets.Scripts
 
             g.Add(new TextButtonModel(
                 "show t_r",
-                b => flightComputer.InitializeTargetData()));
+                b => flightComputer.InitializeCraftData()));
         }
 
         /// <summary>

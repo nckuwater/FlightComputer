@@ -40,6 +40,8 @@ namespace Assets.Scripts{
         }
 
         public void InitializeCraftData(){
+            // Init planet data
+            InitializePlanetData();
             // will update craft, planet.
             var CraftNode = Game.Instance.FlightScene.CraftNode;
 
@@ -52,11 +54,6 @@ namespace Assets.Scripts{
 
             ICraftOrbitData CraftOrbitData = CraftFlightData.Orbit;
             IOrbit CraftOrbit = CraftNode.Orbit;
-
-            var PlanetNode = CraftOrbitData.Parent;
-            var PlanetData = PlanetNode.PlanetData;
-            planet_mass = PlanetData.Mass;
-            planet_mu = Constants.GravitationConstant * planet_mass;
 
             var Craft_input = Game.Instance.Inputs; // IGameInputs
 
@@ -77,14 +74,22 @@ namespace Assets.Scripts{
             InitializeInitData(craft_r, craft_v, craft_theta, craft_h_value, craft_e, planet_mu, out craft_init_r0, out craft_init_v0, 
                                out craft_init_theta, out craft_init_x0, out craft_init_y0, out craft_init_dot_x0, out craft_init_dot_y0, 
                                out craft_p, out craft_q);
+            Debug.Log($"craft_p {craft_p}");
+            Debug.Log($"craft_q {craft_q}");
 
         }
         public void InitializeTargetData(){
+            // Init planet data
+            InitializePlanetData();
             // r, v, h, e, p, q
             var CraftNode = Game.Instance.FlightScene.CraftNode;
             var CraftScript = CraftNode.CraftScript;
             var CraftFlightData = CraftScript.FlightData;
             var NavSphereTarget = CraftFlightData.NavSphereTarget;
+            if (NavSphereTarget == null){
+                Debug.Log("no target selected");
+                return;
+            }
 
             IOrbitNode TargetOrbitNode = NavSphereTarget.OrbitNode;
             IOrbit TargetOrbit = TargetOrbitNode.Orbit;
@@ -107,6 +112,10 @@ namespace Assets.Scripts{
             InitializeInitData(target_r, target_v, target_theta, target_h_value, target_e, planet_mu, out target_init_r0, out target_init_v0,
                                out target_init_theta, out target_init_x0, out target_init_y0, out target_init_dot_x0, out  target_init_dot_y0,
                                out target_p, out target_q);
+            Debug.Log("target_p");
+            Debug.Log(target_p);
+            Debug.Log("target_q");
+            Debug.Log(target_q);
 
         }
         public void InitializeInitData(Vector3d r, Vector3d v, double theta, double h_value, double e, double mu, 
@@ -137,13 +146,25 @@ namespace Assets.Scripts{
             return (t2 + ( Math.Ceiling( (t1 - t2) / T) ) * T ) - t1;
         }
         public double get_E(double e, double theta){
-            return (Math.Atan2((Math.Sqrt(1 - Math.Pow(e, 2) ) * Math.Sin(theta))/(e + Math.Cos(theta))));
+            return (Math.Atan2((Math.Sqrt(1 - Math.Pow(e, 2) ) * Math.Sin(theta)), (e + Math.Cos(theta))));
         }
         public double get_Me(double e, double theta){
             return (get_E(e, theta) - e*(Math.Sin(get_E(e, theta))));
         }
         public double get_t(double e, double theta, double T){
             return (get_Me(e, theta)/2*Math.PI)*T;
+        }
+        public double formula_E_zero(double E, double e, double Me){
+            return E - e * Math.Sin(E) - Me;
+        }
+        public double formula_E_derivative(double E, double e){
+            return 1 - e * Math.Cos(E);
+        }
+        public double calculate_Me_in_t(double t, double T){
+            return 2*Math.Pi * t / T;
+        }
+        public double calculate_E_in_t(double t, double T){
+
         }
         public void updateCoordinateVectors(){
             // update North, East, unit Position.
