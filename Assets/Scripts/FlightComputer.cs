@@ -152,10 +152,25 @@ namespace Assets.Scripts{
             InitializeTargetData();
             double transfer_ra, transfer_rp = Vetor3d.Magnitude(craft_r);
             Vector3d intercept_r_direction = craft_r * -1, intercept_r, intercept_v;
-            double intercept_theta_in_target = get_theta_of_r(intercept_r_direction, target_p, target_q); // the intercept point's theta in target orbit.
-            intercept_r = Vector3d.ClampMagnitude(intercept_r_direction, get_r(target_h_value, planet_mu, target_e, intercept_theta_in_target));
+            // the intercept point's theta in target orbit.
+            double intercept_theta_in_target = get_theta_of_r(intercept_r_direction, target_p, target_q); 
+            double intercept_r_value = get_r(target_h_value, planet_mu, target_e, intercept_theta_in_target);
+            double craft_r_value = Vector3d.Magnitude(craft_r);
+            intercept_r = Vector3d.ClampMagnitude(intercept_r_direction, intercept_r_value);
 
             bool IsDecrease;
+            if (intercept_r_value > craft_r_value){
+                IsDecrease = false;
+                transfer_ra = intercept_r_value;
+                transfer_rp = craft_r_value;
+            }else{
+                IsDecrease = true;
+                transfer_ra = craft_r_value;
+                transfer_rp = intercept_r_value;
+            }
+            // find periods to wait
+
+
         }
 
 
@@ -215,20 +230,36 @@ namespace Assets.Scripts{
         public double calculate_Me_in_t(double t, double T){
             return 2*Math.Pi * t / T;
         }
-        public double calculate_E_in_t(double t, double T, double e, double init_E = 0){
+        public double calculate_E_in_t(double t, double T, double e, double init_E = 0, int loop_time = 10){
             // set init_E with theta can boost
             double Me = calculate_Me_in_t(t, T);
             double E = init_E;
-            for(int i=0; i<10; ++i){
+            for(int i=0; i<loop_time; ++i){
                 E += formula_E_zero(E, e, Me)/formula_E_derivative(E, e);
             }
-            return E;
+            return reduceAngleInPI(E);
         }
         public double calculate_theta_in_t(double t, double T, double e, double init_theta = 0){
             // init_theta is the variable, not craft_init_theta0
             double init_E = get_E(e, init_theta);
             double E = calculate_E_in_t(t, T, e, init_E);
-
+            double theta = PI2 * Math.Floor(t/T) - Math.PI;
+            t = t + Math.Floor((t - T)/T) * T;
+        }
+        // Function for angle comparision and revision
+        public bool IsAngleBetween(double a1, double a, double a2){
+            
+            a2 -= Math.Floor((a2 - a1) / PI2 ) * PI2;
+        }
+        public double reduceAngleInPI(double angle){
+            if (angle == 0)
+                return 0;
+            if (angle > 0){
+                angle -= Math.Floor((angle-Math.PI) / PI2) * PI2;
+            }else if ( angle < 0){
+                angle -= Math.Floor((angle+Math.PI) / PI2) * PI2;
+            }
+            return angle;
         }
         public void updateCoordinateVectors(){
             // update North, East, unit Position.
