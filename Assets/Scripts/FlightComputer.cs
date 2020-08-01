@@ -143,7 +143,7 @@ namespace Assets.Scripts{
         }
         public void calculate_data_in_theta(double theta, double init_theta0, Vector3d init_r0, Vector3d init_v0, 
                                             double h_value, double e, double T,
-                                            out Vector3d r, out Vector3d v){
+                                            out Vector3d calc_r, out Vector3d calc_v){
             // be sure do init this
             // theta is the variable to be set.
             
@@ -156,10 +156,14 @@ namespace Assets.Scripts{
             double lagr_f = 1 - ( (mu * calc_r )/Math.Pow(h_value, 2) * (1 - Math.Cos(delta_theta)));
             double lagr_g = ((calc_r * init_r0_value) * Math.Sin(delta_theta)) / h_value;
 
-            double calc_r = lagr_f * init_r0 + lagr_g * init_v0;
+            // Vector3d calc_r = lagr_f * init_r0 + lagr_g * init_v0;
+            calc_r = lagr_f * init_r0 + lagr_g * init_v0;
 
             double lagr_dot_g = 1 - ( ( (mu * init_r0_value) / Math.Pow(h_value, 2) ) * (1 - Math.Cos(delta_theta)) );
+            double lagr_dot_f = (1 / lagr_g) * ( (lagr_f * lagr_dot_g) - 1);
             
+            // Vector3d calc_v = lagr_dot_f * init_r0 + lagr_dot_g * init_v0;
+            calc_v = lagr_dot_f * init_r0 + lagr_dot_g * init_v0;
         }
 
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
