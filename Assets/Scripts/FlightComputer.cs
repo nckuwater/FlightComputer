@@ -138,8 +138,11 @@ namespace Assets.Scripts{
             planet_mass = PlanetData.Mass;
             planet_mu = Constants.GravitationConstant * planet_mass;
         }
-        public void calculateCraftPath(){
-
+        public void calculate_data_in_theta(double theta, double e, double T, Vector3d p, Vector3d q, out Vector3d r, out Vector3d v){
+            // be sure do init this
+            // theta is the variable to be set.
+            double E = calculate_E_in_t(craft_t, craft_T, craft_e);
+            
         }
 
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
@@ -163,8 +166,19 @@ namespace Assets.Scripts{
         public double calculate_Me_in_t(double t, double T){
             return 2*Math.Pi * t / T;
         }
-        public double calculate_E_in_t(double t, double T){
-
+        public double calculate_E_in_t(double t, double T, double e, double init_E = 0){
+            // set init_E with theta can boost
+            double Me = calculate_Me_in_t(t, T);
+            double E = init_E;
+            for(int i=0; i<10; ++i){
+                E += formula_E_zero(E, e, Me)/formula_E_derivative(E, e);
+            }
+            return E;
+        }
+        public double calculate_theta_in_t(double t, double T, double e, double init_theta = 0){
+            // init_theta is the variable, not craft_init_theta
+            double init_E = get_E(e, init_theta);
+            return calculate_E_in_t(t, T, e, init_E);
         }
         public void updateCoordinateVectors(){
             // update North, East, unit Position.
