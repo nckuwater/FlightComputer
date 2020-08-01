@@ -248,8 +248,18 @@ namespace Assets.Scripts{
         }
         // Function for angle comparision and revision
         public bool IsAngleBetween(double a1, double a, double a2){
-            
-            a2 -= Math.Floor((a2 - a1) / PI2 ) * PI2;
+            a1 = reduceAngleInPI(a1);
+            a = reduceAngleInPI(a);
+            a2 = reduceAngleInPI(a2);
+            if ( a < a1 )
+                a += PI2;
+            if ( a2 < a1){
+                a2 += PI2;
+            }
+            if (a1<=a && a<=a2){
+                return true;
+            }
+            return false;
         }
         public double reduceAngleInPI(double angle){
             if (angle == 0)
