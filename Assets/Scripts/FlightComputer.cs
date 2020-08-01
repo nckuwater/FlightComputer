@@ -168,8 +168,10 @@ namespace Assets.Scripts{
                 transfer_ra = craft_r_value;
                 transfer_rp = intercept_r_value;
             }
-            // find periods to wait
-
+            // Find periods to wait
+            // init value for iteration
+            double iter_target_theta = target_theta;
+            double target_theta_after_T = calculate_theta_in_t(craft_T, target_T, target_e, planet_mu, target_theta);
 
         }
 
@@ -210,7 +212,7 @@ namespace Assets.Scripts{
             return (Math.Pow(h_value, 2)/mu) / (1 + e * Math.Cos(theta));
         }
         public double get_T(double mu, double h_value, double e){
-            (PI2/Math.Pow(mu, 2))*Math.Pow((h_value/Math.Sqrt(1-Math.Pow(e, 2))), 3);
+            return (PI2/Math.Pow(mu, 2))*Math.Pow((h_value/Math.Sqrt(1-Math.Pow(e, 2))), 3);
         }
         public double get_E(double e, double theta){
             return (Math.Atan2((Math.Sqrt(1 - Math.Pow(e, 2) ) * Math.Sin(theta)), (e + Math.Cos(theta))));
@@ -234,7 +236,7 @@ namespace Assets.Scripts{
             return 1 - e * Math.Cos(E);
         }
         public double calculate_Me_in_t(double t, double T){
-            return 2*Math.Pi * t / T;
+            return PI2 * t / T;
         }
         public double calculate_E_in_t(double t, double T, double e, double init_E = 0, int loop_time = 10){
             // set init_E with theta can boost
@@ -245,24 +247,22 @@ namespace Assets.Scripts{
             }
             return reduceAngleInPI(E);
         }
-        public double calculate_theta_in_t(double t, double T, double e, double init_theta = 0){
-            // init_theta is the variable, not craft_init_theta0
+        public double calculate_theta_in_t(double t, double T, double e, double mu, double init_theta = 0){
+            // init_theta is the variable, not craft_init_theta0, optional, for boosting.
+            // calculate loop value
+            double theta = PI2 * Math.Floor(t/T);
+            // reduce t 
+            t -= Math.Floor((t - T)/T) * T;
+
             double init_E = get_E(e, init_theta);
             double E = calculate_E_in_t(t, T, e, init_E);
-            double theta = PI2 * Math.Floor(t/T) - Math.PI;
-            t = t + Math.Floor((t - T)/T) * T;
+            theta += 2 * Math.Atan(Math.Sqrt(1+e/1-e)*Math.Tan(E/2));
+            return theta;
         }
-        // Function for angle comparision and revision
+        // Function for angle/time comparision and revision
         public bool IsAngleBetween(double a1, double a, double a2){
-            a1 = reduceAngleInPI(a1);
-            a = reduceAngleInPI(a);
-            a2 = reduceAngleInPI(a2);
-            if ( a < a1 )
-                a += PI2;
-            if ( a2 < a1){
-                a2 += PI2;
-            }
-            if (a1<=a && a<=a2){
+            a += Math.Ceiling((a1 - a)/PI2) * PI2;
+            if (a <= a2){
                 return true;
             }
             return false;
