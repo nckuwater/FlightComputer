@@ -213,12 +213,14 @@ namespace Assets.Scripts{
                                                                                target_T, target_e, planet_mu);
                 ++total_periods_to_wait;
             }
+            Debug.Log($"Total period to wait= {total_periods_to_wait}");
+            // iter_target_theta now is iter_init_target_theta
             double total_wait_time = craft_T * total_periods_to_wait;
             // Finding precise angle
             // iter_target_theta can continue.
             double UNIT_RADIAN = 10*Math.PI/180;
             double iter_craft_theta = craft_theta;
-            double iter_craft_theta_after_time_elapsed = iter_craft_theta + UNIT_RADIAN;
+            double iter_craft_theta_after_time_elapsed = iter_craft_theta;// + UNIT_RADIAN;
             double iter_craft_r_value = get_r(craft_h_value, planet_mu, craft_e, iter_craft_theta);
             double iter_time_elapsed = GetElapsedTimeBetweenTime(get_t(craft_e, iter_craft_theta, craft_T), 
                                                                  get_t(craft_e, iter_craft_theta_after_time_elapsed, craft_T), craft_T);
@@ -229,14 +231,14 @@ namespace Assets.Scripts{
             
             double iter_target_theta_after_time_elapsed = iter_target_theta; // ignore first process
             int iter_direction = 1; // should be 1 or -1
-            for(int i=0; i<10; ++i){
-                for(int k=0; k<20; ++k){
+            for(int i=0; i<2; ++i){
+                for(int k=0;k<200 ; ++k){
                     Debug.Log($"k= {k}");
                     // check if transfer_target_begin_theta is in estimate delta target theta.
                     if (iter_direction == 1 && k != 0)
                         if ((IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_time_elapsed)))
                             break;
-                    else if ((IsAngleBetween(iter_target_theta_after_time_elapsed, transfer_target_begin_theta, iter_target_theta)))
+                    else if ((IsAngleBetween(iter_target_theta_after_time_elapsed, transfer_target_begin_theta, iter_target_theta)) && k != 0)
                         break;
                     // calc craft
                     iter_craft_theta = iter_craft_theta_after_time_elapsed;
@@ -254,16 +256,17 @@ namespace Assets.Scripts{
                     total_iter_time_elapsed += iter_time_elapsed;
                     total_target_elapsed_t += iter_time_elapsed;
                     // calc target
-                    iter_target_theta = iter_target_theta_after_time_elapsed % PI2;
+                    iter_target_theta = iter_target_theta_after_time_elapsed;
                     iter_target_theta_after_time_elapsed = calculate_theta_in_t_elapsed(iter_time_elapsed, iter_target_theta,
                                                                                 target_T, target_e, planet_mu);
-                    if (iter_direction == 1)
+                    /*if (iter_direction == 1){
                         if ( iter_target_theta_after_time_elapsed < iter_target_theta)
                             iter_target_theta_after_time_elapsed += PI2;
-                    else if (iter_target_theta_after_time_elapsed > iter_target_theta)
+                    }else if (iter_target_theta_after_time_elapsed > iter_target_theta){
                             iter_target_theta += PI2;
+                    }*/
                     // calc transfer/intercept
-                    intercept_r_direction = craft_p * Math.Cos(iter_craft_theta) + craft_q * Math.Sin(iter_craft_theta);
+                    intercept_r_direction = -1*(craft_p * Math.Cos(iter_craft_theta) + craft_q * Math.Sin(iter_craft_theta));
                     intercept_theta_in_target = get_theta_of_r(intercept_r_direction, target_p, target_q);
                     intercept_r_value = get_r(target_h_value, planet_mu, target_e, intercept_theta_in_target);
                     set_ra_rp(iter_craft_r_value, intercept_r_value, out transfer_ra, out transfer_rp);
@@ -273,8 +276,8 @@ namespace Assets.Scripts{
                     transfer_target_begin_theta = calculate_theta_in_t_elapsed(-0.5*(transfer_T), intercept_theta_in_target,
                                                                                target_T, target_e, planet_mu);
                     
-                    Debug.Log($"iter_target_theta= {iter_target_theta}, iter_after= {iter_target_theta_after_time_elapsed}");
-                    Debug.Log($"begin_target_theta= {transfer_target_begin_theta}");
+                    Debug.Log($"iter_target_theta= {reduceAngleInPI(iter_target_theta)},iter_after= {reduceAngleInPI(iter_target_theta_after_time_elapsed)}, dr= {iter_direction}");
+                    Debug.Log($"begin_target_theta= {reduceAngleInPI(transfer_target_begin_theta)}, time_elapsed= {iter_time_elapsed}");
                 }
                 Debug.Log($"UNIT RADIAN= {UNIT_RADIAN}");
                 UNIT_RADIAN /= 2;
@@ -282,9 +285,8 @@ namespace Assets.Scripts{
                 iter_target_theta = iter_target_theta_after_time_elapsed;
             }
             total_wait_time += total_iter_time_elapsed;
-            Debug.Log($"total_wait_time={total_wait_time}");
+            Debug.Log($"iter_time= {total_iter_time_elapsed}, total_wait_time={total_wait_time}");
         }
-
 
         // Component Calculations
         public void calculate_data_in_theta(double theta, double init_theta0, Vector3d init_r0, Vector3d init_v0, 
@@ -393,7 +395,7 @@ namespace Assets.Scripts{
             if (angle == 0)
                 return 0;
             if (angle > 0){
-                angle -= Math.Floor((angle-Math.PI) / PI2) * PI2;
+                angle -= Math.Ceiling((angle-Math.PI) / PI2) * PI2;
             }else if ( angle < 0){
                 angle -= Math.Floor((angle+Math.PI) / PI2) * PI2;
             }
