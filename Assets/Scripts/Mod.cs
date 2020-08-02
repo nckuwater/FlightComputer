@@ -43,6 +43,9 @@ namespace Assets.Scripts
             g.Add(new TextButtonModel(
                 "show t_r",
                 b => flightComputer.InitializeCraftData()));
+            g.Add(new TextButtonModel(
+                "e2e calc",
+                b => flightComputer.calculate_next_e2e_intercept_launch_time()));
         }
 
         /// <summary>
