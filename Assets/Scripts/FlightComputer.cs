@@ -191,11 +191,12 @@ namespace Assets.Scripts{
             // init value for iteration
             double total_target_elapsed_t = get_t(target_e, iter_target_theta, target_T);
             double iter_target_theta = target_theta;
-            double intercept_target_begin_theta = calculate_theta_in_t_elapsed(-0.5*(transfer_T), iter_target_theta, target_T, target_e, planet_mu);
+            double transfer_target_begin_theta = calculate_theta_in_t_elapsed(-0.5*(transfer_T), intercept_theta_in_target,
+                                                                               target_T, target_e, planet_mu, intercept_theta_in_target);
             double iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(craft_T, iter_target_theta, 
                                                                                   target_T, target_e, planet_mu, iter_target_theta);
             int total_periods_to_wait = 0;
-            while (!(IsAngleBetween(iter_target_theta, intercept_theta_in_target, iter_target_theta_after_craft_T))){
+            while (!(IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_craft_T))){
                 iter_target_theta = iter_target_theta_after_craft_T;
                 iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(craft_T, iter_target_theta, 
                                                                                target_T, target_e, planet_mu, iter_target_theta);
@@ -207,24 +208,29 @@ namespace Assets.Scripts{
             double UNIT_RADIAN = 10*Math.PI/180;
             double iter_craft_theta = craft_theta;
             double iter_craft_theta_after_time_elapsed = iter_craft_theta + UNIT_RADIAN;
+            double iter_craft_r_value = get_r(craft_h_value, planet_mu, craft_e, iter_craft_theta);
             double iter_time_elapsed = GetElapsedTimeBetweenTime(get_t(craft_e, iter_craft_theta, craft_T), 
                                                                  get_t(craft_e, iter_craft_theta_after_time_elapsed, craft_T), craft_T);
             double total_iter_time_elapsed = iter_time_elapsed;
             total_target_elapsed_t = get_t(target_e, iter_target_theta, target_T) + iter_time_elapsed;
-            double iter_target_theta_after_time_elapsed = calculate_theta_in_t(total_target_elapsed_t,
-                                                                               target_T, target_e, planet_mu, iter_target_theta);
+            /*double iter_target_theta_after_time_elapsed = calculate_theta_in_t_elapsed(iter_time_elapsed, iter_target_theta,
+                                                                               target_T, target_e, planet_mu, iter_target_theta);*/
+            
+            double iter_craft_theta_after_time_elapsed = iter_target_theta; // ignore first process
             int iter_direction = 1; // should be 1 or -1
             for(int i=0; i<10; ++i){
                 for(int k=0; k<20; ++k){
                     Debug.Log($"k= {k}");
+                    // check if transfer_target_begin_theta is in estimate delta target theta.
                     if (iter_direction == 1)
-                        if ((IsAngleBetween(iter_target_theta, intercept_theta_in_target, iter_target_theta_after_time_elapsed)))
+                        if ((IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_time_elapsed)))
                             break;
-                    else if ((IsAngleBetween(iter_target_theta_after_time_elapsed, intercept_theta_in_target, iter_target_theta)))
+                    else if ((IsAngleBetween(iter_target_theta_after_time_elapsed, transfer_target_begin_theta, iter_target_theta)))
                         break;
                     // calc craft
                     iter_craft_theta = iter_craft_theta_after_time_elapsed;
                     iter_craft_theta_after_time_elapsed += iter_direction * UNIT_RADIAN;
+                    iter_craft_r_value = get_r(craft_h_value, planet_mu, craft_e, iter_craft_theta);
                     if (iter_direction == 1){
                         iter_time_elapsed = GetElapsedTimeBetweenTime(get_t(craft_e, iter_craft_theta, craft_T), 
                                                                       get_t(craft_e, iter_craft_theta_after_time_elapsed, craft_T), craft_T);
@@ -232,14 +238,25 @@ namespace Assets.Scripts{
                         iter_time_elapsed = GetElapsedTimeBetweenTime(get_t(craft_e, iter_craft_theta_after_time_elapsed, craft_T), 
                                                                       get_t(craft_e, iter_craft_theta, craft_T), craft_T);
                     }
-
+                    iter_time_elapsed *= iter_direction;
                     // add elapsed
-                    total_iter_time_elapsed += iter_direction * iter_time_elapsed;
-                    total_target_elapsed_t += iter_direction * iter_time_elapsed;
+                    total_iter_time_elapsed += iter_time_elapsed;
+                    total_target_elapsed_t += iter_time_elapsed;
                     // calc target
                     iter_target_theta = iter_target_theta_after_time_elapsed;
-                    iter_target_theta_after_time_elapsed = calculate_theta_in_t(total_target_elapsed_t,
+                    iter_target_theta_after_time_elapsed = calculate_theta_in_t_elapsed(iter_time_elapsed, iter_target_theta,
                                                                                 target_T, target_e, planet_mu, iter_target_theta);
+                    // calc transfer/intercept
+                    intercept_r_direction = craft_p * Math.Cos(iter_craft_theta) + craft_q * Math.Sin(iter_craft_theta);
+                    intercept_theta_in_target = get_theta_of_r(intercept_r_direction, target_p, target_q);
+                    intercept_r_value = get_r(target_h_value, planet_mu, target_e, intercept_theta_in_target);
+                    set_ra_rp(iter_craft_r_value, intercept_r_value, out transfer_ra, out transfer_rp);
+                    transfer_e = (transfer_ra-transfer_rp)/(transfer_ra+transfer_rp);
+                    transfer_h_value = get_h_value(transfer_ra, transfer_rp, planet_mu);
+                    transfer_T = get_T(planet_mu, transfer_h_value, transfer_e);
+                    transfer_target_begin_theta = calculate_theta_in_t_elapsed(-0.5*(transfer_T), intercept_theta_in_target,
+                                                                               target_T, target_e, planet_mu, intercept_theta_in_target);
+                    
                     Debug.Log($"iter_target_theta={iter_target_theta}, iter_after={iter_target_theta_after_time_elapsed}");
                 }
                 Debug.Log($"UNIT RADIAN= {UNIT_RADIAN}");
@@ -374,6 +391,15 @@ namespace Assets.Scripts{
             if (time < 0)
                 return time + T;
             return time;
+        }
+        public void set_ra_rp(double r1, double r2, out double ra, out double rp){
+            if (r1 > r2){
+                ra = r1;
+                rp = r2;
+            }else{
+                ra = r2;
+                rp = r1;
+            }
         }
         public void updateCoordinateVectors(){
             // update North, East, unit Position.
