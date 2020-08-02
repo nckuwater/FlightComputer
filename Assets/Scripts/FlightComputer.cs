@@ -189,8 +189,10 @@ namespace Assets.Scripts{
             double total_iter_time_elapsed = iter_time_elapsed;
             double iter_target_theta_after_time_elapsed = calculate_theta_in_t(get_t(target_e, iter_target_theta, target_T),
                                                                                target_T, target_e, planet_mu, iter_target_theta);
-            while (!(IsAngleBetween())){
-                
+            while (!(IsAngleBetween(iter_target_theta, intercept_theta_in_target, iter_target_theta_after_time_elapsed))){
+                iter_target_theta = iter_target_theta_after_time_elapsed;
+                iter_target_theta_after_time_elapsed = calculate_theta_in_t(get_t(target_e, iter_target_theta, target_T),
+                                                                               target_T, target_e, planet_mu, iter_target_theta);
             }
         }
 
