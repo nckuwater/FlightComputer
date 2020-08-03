@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using ModApi;
 using ModApi.Common;
 using ModApi.Craft;
@@ -8,10 +9,11 @@ using ModApi.Ui;
 using ModApi.Ui.Inspector;
 using ModApi.Mods;
 using UnityEngine;
+using ModApi.GameLoop;
 
 
 namespace Assets.Scripts{
-    public class FlightComputer{
+    public class FlightComputer : MonoBehaviour{
         Vector3d craft_r, target_r, craft_v, target_v, craft_unit_r, target_unit_r;
         double craft_v_value, target_v_value,craft_v_r, target_v_r;
         Vector3d craft_h, target_h;
@@ -42,6 +44,9 @@ namespace Assets.Scripts{
         }
         private void OnInitializeCalaulation(){
             InitializeCraftData();
+        }
+        public void OnInitialized(){
+            //gameObject.AddComponent<FlightComputer>();
         }
 
         public void InitializeCraftData(bool reset_init = true){
@@ -209,14 +214,23 @@ namespace Assets.Scripts{
             double iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(iter_diff_T, iter_target_theta,
                                                                                   target_T, target_e, planet_mu);
             int total_periods_to_wait = 0;
-            if (Math.Abs(iter_diff_T) > target_T){
+            if (Math.Abs(iter_diff_T) >= target_T){
                 total_periods_to_wait = 0;
             }else{
-                while (!(IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_craft_T))){
+                if (iter_diff_T > 0)
+                    while (!(IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_craft_T))){
+                        iter_target_theta = iter_target_theta_after_craft_T;
+                        iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(iter_diff_T, iter_target_theta, 
+                                                                                target_T, target_e, planet_mu);
+                        ++total_periods_to_wait;
+                    }
+                else{
+                    while (!(IsAngleBetween(iter_target_theta_after_craft_T, transfer_target_begin_theta, iter_target_theta))){
                     iter_target_theta = iter_target_theta_after_craft_T;
                     iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(iter_diff_T, iter_target_theta, 
                                                                                 target_T, target_e, planet_mu);
                     ++total_periods_to_wait;
+                    }
                 }
             }
 
@@ -241,15 +255,19 @@ namespace Assets.Scripts{
             bool IsPassDecreased = false;
             double cmp_result = get_min_angle_between_theta(iter_target_theta, transfer_target_begin_theta), temp_cmp_result;
             for(int i=0; i<2; ++i){
+                //IsPassDecreased = false;
                 for(int k=0;k<200 ; ++k){
                     Debug.Log($"k= {k}");
                     if (k!=0){
                         temp_cmp_result = get_min_angle_between_theta(iter_target_theta, transfer_target_begin_theta);
                         if(temp_cmp_result < cmp_result){
                             IsPassDecreased = true;
+                            cmp_result = temp_cmp_result;
+                            Debug.Log($"cmp_result= {cmp_result}");
                         }else if (IsPassDecreased){
-                            IsPassDecreased = false;
-                            iter_target_theta_after_time_elapsed = iter_target_theta;
+                            //IsPassDecreased = false;
+                            iter_target_theta = iter_target_theta_after_time_elapsed;
+                            Debug.Log("cmp break");
                             break;
                         }
                     }
@@ -306,6 +324,26 @@ namespace Assets.Scripts{
             total_wait_time += total_iter_time_elapsed;
             Debug.Log($"iter_time= {total_iter_time_elapsed}, total_wait_time={total_wait_time}");
         }
+        // Craft Control
+        public void start_coroutin(){
+            Debug.Log("start coroutin");
+            StartCoroutine(test_burn());
+            Debug.Log("start coroutin end");
+        }
+        public IEnumerator test_burn(){
+            Debug.Log("waiting");
+            var CraftNode = Game.Instance.FlightScene.CraftNode;
+            var CraftControls = CraftNode.Controls;
+            CraftControls.Throttle = 0.37f;
+            
+            yield return new WaitUntil(() => IsOK());
+            Debug.Log("wait finished");   
+        }
+        public bool IsOK(){
+            if (Game.Instance.FlightScene.CraftNode.Controls.Slider1 > 0.5)
+                return true;
+            return false;
+        }
 
         // Component Calculations
         public void calculate_data_in_theta(double theta, double init_theta0, Vector3d init_r0, Vector3d init_v0, 
@@ -339,7 +377,7 @@ namespace Assets.Scripts{
             return (Math.Cos(theta)*p + Math.Sin(theta)*q);
         }
         public double get_min_angle_between_theta(double a1, double a2){
-            return Vector3d.AngleBetween(new Vector3d(Math.Cos(a1), Math.Sin(a1), 0), new Vector3d(Math.Cos(a2), Math.Sin(a2), 0));
+            return adjust_angle_to_unsigned(Vector3d.AngleBetween(new Vector3d(Math.Cos(a1), Math.Sin(a1), 0), new Vector3d(Math.Cos(a2), Math.Sin(a2), 0)));
         }
 
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
