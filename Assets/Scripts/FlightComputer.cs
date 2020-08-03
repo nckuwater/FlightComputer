@@ -204,15 +204,22 @@ namespace Assets.Scripts{
             double iter_target_theta = target_theta;
             double transfer_target_begin_theta = calculate_theta_in_t_elapsed(-0.5*(transfer_T), intercept_theta_in_target,
                                                                                target_T, target_e, planet_mu);
-            double iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(craft_T, iter_target_theta, 
+            double iter_former_transfer_target_begin_theta = transfer_target_begin_theta; // for angle cover check
+            double iter_diff_T = craft_T - target_T;
+            double iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(iter_diff_T, iter_target_theta,
                                                                                   target_T, target_e, planet_mu);
             int total_periods_to_wait = 0;
-            while (!(IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_craft_T))){
-                iter_target_theta = iter_target_theta_after_craft_T;
-                iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(craft_T, iter_target_theta, 
-                                                                               target_T, target_e, planet_mu);
-                ++total_periods_to_wait;
+            if (Math.Abs(iter_diff_T) > target_T){
+                total_periods_to_wait = 0;
+            }else{
+                while (!(IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_craft_T))){
+                    iter_target_theta = iter_target_theta_after_craft_T;
+                    iter_target_theta_after_craft_T = calculate_theta_in_t_elapsed(iter_diff_T, iter_target_theta, 
+                                                                                target_T, target_e, planet_mu);
+                    ++total_periods_to_wait;
+                }
             }
+
             Debug.Log($"Total period to wait= {total_periods_to_wait}");
             // iter_target_theta now is iter_init_target_theta
             double total_wait_time = craft_T * total_periods_to_wait;
@@ -231,9 +238,21 @@ namespace Assets.Scripts{
             
             double iter_target_theta_after_time_elapsed = iter_target_theta; // ignore first process
             int iter_direction = 1; // should be 1 or -1
+            bool IsPassDecreased = false;
+            double cmp_result = get_min_angle_between_theta(iter_target_theta, transfer_target_begin_theta), temp_cmp_result;
             for(int i=0; i<2; ++i){
                 for(int k=0;k<200 ; ++k){
                     Debug.Log($"k= {k}");
+                    if (k!=0){
+                        temp_cmp_result = get_min_angle_between_theta(iter_target_theta, transfer_target_begin_theta);
+                        if(temp_cmp_result < cmp_result){
+                            IsPassDecreased = true;
+                        }else if (IsPassDecreased){
+                            IsPassDecreased = false;
+                            iter_target_theta_after_time_elapsed = iter_target_theta;
+                            break;
+                        }
+                    }
                     // check if transfer_target_begin_theta is in estimate delta target theta.
                     if (iter_direction == 1 && k != 0)
                         if ((IsAngleBetween(iter_target_theta, transfer_target_begin_theta, iter_target_theta_after_time_elapsed)))
@@ -315,6 +334,12 @@ namespace Assets.Scripts{
         }
         public double get_theta_of_r(Vector3d r, Vector3d p, Vector3d q){
             return Math.Atan2( Vector3d.Dot(r, q), Vector3d.Dot(r, p) );
+        }
+        public Vector3d get_r_of_theta(double theta, Vector3d p, Vector3d q){
+            return (Math.Cos(theta)*p + Math.Sin(theta)*q);
+        }
+        public double get_min_angle_between_theta(double a1, double a2){
+            return Vector3d.AngleBetween(new Vector3d(Math.Cos(a1), Math.Sin(a1), 0), new Vector3d(Math.Cos(a2), Math.Sin(a2), 0));
         }
 
         public double GetElapsedTimeBetweenTime(double t1, double t2, double T){
